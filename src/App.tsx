@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants, Transition } from "framer-motion";
 import { ThemeProvider } from "@/hooks/use-theme";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -16,7 +16,7 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const pageVariants = {
+const pageVariants: Variants = {
   initial: {
     opacity: 0,
     x: -20,
@@ -31,9 +31,9 @@ const pageVariants = {
   },
 };
 
-const pageTransition = {
-  type: "tween" as const,
-  ease: "anticipate",
+const pageTransition: Transition = {
+  type: "tween",
+  ease: "easeInOut",
   duration: 0.4,
 };
 
