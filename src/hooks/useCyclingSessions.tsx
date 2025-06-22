@@ -21,6 +21,21 @@ interface CyclingSession {
   created_at: string;
 }
 
+interface CreateSessionData {
+  session_name?: string | null;
+  start_time: string;
+  end_time?: string | null;
+  duration_seconds?: number | null;
+  distance_km?: number | null;
+  average_speed_kmh?: number | null;
+  max_speed_kmh?: number | null;
+  elevation_gain_m?: number | null;
+  calories_burned?: number | null;
+  average_heart_rate?: number | null;
+  max_heart_rate?: number | null;
+  notes?: string | null;
+}
+
 export const useCyclingSessions = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -47,7 +62,7 @@ export const useCyclingSessions = () => {
     }
   };
 
-  const createSession = async (sessionData: Partial<CyclingSession>) => {
+  const createSession = async (sessionData: CreateSessionData) => {
     if (!user) return;
 
     try {

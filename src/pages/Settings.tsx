@@ -13,7 +13,8 @@ import {
   Shield,
   Download,
   User,
-  Palette
+  Palette,
+  Activity
 } from 'lucide-react';
 
 const Settings = () => {
