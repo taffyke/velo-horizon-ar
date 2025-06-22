@@ -1,9 +1,10 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import Navigation from '@/components/Navigation';
 import UserMenu from '@/components/UserMenu';
 import MetricCard from '@/components/MetricCard';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { useCyclingSessions } from '@/hooks/useCyclingSessions';
 import { 
   Activity, 
   Timer, 
@@ -14,43 +15,73 @@ import {
 } from 'lucide-react';
 
 const Dashboard = () => {
+  const { profile, loading: profileLoading } = useUserProfile();
+  const { sessions, getTodaysStats, loading: sessionsLoading } = useCyclingSessions();
+  
+  const todaysStats = getTodaysStats();
+
+  const formatDuration = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}:${minutes.toString().padStart(2, '0')}`;
+  };
+
   const metrics = [
     {
       title: 'Distance Today',
-      value: '42.7',
+      value: todaysStats.distance.toFixed(1),
       unit: 'km',
       icon: Activity,
-      change: { value: 12, type: 'increase' as const }
+      change: { value: 0, type: 'increase' as const }
     },
     {
       title: 'Ride Time',
-      value: '2:34',
+      value: todaysStats.duration > 0 ? formatDuration(todaysStats.duration) : '0:00',
       unit: 'hrs',
       icon: Timer,
-      change: { value: 8, type: 'increase' as const }
+      change: { value: 0, type: 'increase' as const }
     },
     {
       title: 'Avg Speed',
-      value: '28.4',
+      value: todaysStats.averageSpeed.toFixed(1),
       unit: 'km/h',
       icon: TrendingUp,
-      change: { value: 5, type: 'increase' as const }
+      change: { value: 0, type: 'increase' as const }
     },
     {
       title: 'Elevation',
-      value: '847',
+      value: todaysStats.elevation.toString(),
       unit: 'm',
       icon: NavigationIcon,
-      change: { value: 15, type: 'increase' as const }
+      change: { value: 0, type: 'increase' as const }
     }
   ];
 
-  const achievements = [
-    { title: 'Distance Master', description: '100km in a day', earned: true },
-    { title: 'Hill Climber', description: '1000m elevation', earned: true },
-    { title: 'Speed Demon', description: '50+ km/h', earned: false },
-    { title: 'Endurance Pro', description: '5+ hours', earned: false }
-  ];
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  if (profileLoading || sessionsLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-cycling flex items-center justify-center">
+        <div className="glass-morphism rounded-xl p-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cycling-primary mx-auto"></div>
+          <p className="text-white text-center mt-4">Loading your data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-cycling relative">
@@ -63,7 +94,7 @@ const Dashboard = () => {
         >
           <div className="text-center flex-1">
             <h1 className="text-3xl font-orbitron font-bold text-white mb-2">
-              Dashboard
+              Welcome back{profile?.full_name ? `, ${profile.full_name}` : ''}!
             </h1>
             <p className="text-white/80">
               Track your cycling progress and achievements
@@ -99,30 +130,39 @@ const Dashboard = () => {
           </div>
           
           <div className="space-y-4">
-            {[
-              { date: 'Today', route: 'Mountain Trail Loop', distance: '42.7 km', time: '2:34:21' },
-              { date: 'Yesterday', route: 'City Park Circuit', distance: '28.3 km', time: '1:45:12' },
-              { date: '2 days ago', route: 'Riverside Path', distance: '35.6 km', time: '2:12:45' }
-            ].map((ride, index) => (
-              <motion.div
-                key={index}
-                className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
-                whileHover={{ scale: 1.02 }}
-              >
-                <div>
-                  <p className="font-medium text-white">{ride.route}</p>
-                  <p className="text-sm text-white/70">{ride.date}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-medium text-white">{ride.distance}</p>
-                  <p className="text-sm text-white/70">{ride.time}</p>
-                </div>
-              </motion.div>
-            ))}
+            {sessions.length > 0 ? (
+              sessions.slice(0, 3).map((session, index) => (
+                <motion.div
+                  key={session.id}
+                  className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                  whileHover={{ scale: 1.02 }}
+                >
+                  <div>
+                    <p className="font-medium text-white">
+                      {session.session_name || 'Cycling Session'}
+                    </p>
+                    <p className="text-sm text-white/70">{formatDate(session.created_at)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-white">
+                      {session.distance_km ? `${session.distance_km.toFixed(1)} km` : 'N/A'}
+                    </p>
+                    <p className="text-sm text-white/70">
+                      {session.duration_seconds ? formatDuration(session.duration_seconds) : 'N/A'}
+                    </p>
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-white/60">No cycling sessions yet.</p>
+                <p className="text-white/40 text-sm mt-2">Start tracking your rides to see them here!</p>
+              </div>
+            )}
           </div>
         </motion.div>
 
-        {/* Achievements */}
+        {/* Achievements - Keep static for now */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -134,36 +174,9 @@ const Dashboard = () => {
             <h2 className="text-xl font-semibold text-white">Achievements</h2>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {achievements.map((achievement, index) => (
-              <motion.div
-                key={achievement.title}
-                className={`p-4 rounded-lg transition-all ${
-                  achievement.earned 
-                    ? 'bg-cycling-primary/20 border border-cycling-primary/30' 
-                    : 'bg-white/5 border border-white/10'
-                }`}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.8 + index * 0.1 }}
-                whileHover={{ scale: 1.05 }}
-              >
-                <div className="flex items-center space-x-3">
-                  <Trophy 
-                    className={achievement.earned ? 'text-cycling-accent' : 'text-white/40'} 
-                    size={24} 
-                  />
-                  <div>
-                    <p className={`font-medium ${achievement.earned ? 'text-white' : 'text-white/60'}`}>
-                      {achievement.title}
-                    </p>
-                    <p className={`text-sm ${achievement.earned ? 'text-white/80' : 'text-white/50'}`}>
-                      {achievement.description}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+          <div className="text-center py-8">
+            <p className="text-white/60">No achievements yet.</p>
+            <p className="text-white/40 text-sm mt-2">Keep cycling to unlock achievements!</p>
           </div>
         </motion.div>
 

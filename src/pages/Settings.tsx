@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Navigation from '@/components/Navigation';
 import { useTheme } from '@/hooks/use-theme';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { 
   Settings as SettingsIcon, 
   Sun, 
@@ -17,6 +18,67 @@ import {
 
 const Settings = () => {
   const { theme, setTheme } = useTheme();
+  const { profile, cyclingData, updateProfile, updateCyclingData, loading } = useUserProfile();
+  const [localProfile, setLocalProfile] = useState({
+    full_name: profile?.full_name || '',
+    phone: profile?.phone || '',
+    country: profile?.country || '',
+    city: profile?.city || '',
+  });
+  const [localCyclingData, setLocalCyclingData] = useState({
+    weight_kg: cyclingData?.weight_kg || '',
+    height_cm: cyclingData?.height_cm || '',
+    fitness_level: cyclingData?.fitness_level || 'beginner',
+    preferred_cycling_type: cyclingData?.preferred_cycling_type || 'road',
+  });
+
+  React.useEffect(() => {
+    if (profile) {
+      setLocalProfile({
+        full_name: profile.full_name || '',
+        phone: profile.phone || '',
+        country: profile.country || '',
+        city: profile.city || '',
+      });
+    }
+  }, [profile]);
+
+  React.useEffect(() => {
+    if (cyclingData) {
+      setLocalCyclingData({
+        weight_kg: cyclingData.weight_kg?.toString() || '',
+        height_cm: cyclingData.height_cm?.toString() || '',
+        fitness_level: cyclingData.fitness_level || 'beginner',
+        preferred_cycling_type: cyclingData.preferred_cycling_type || 'road',
+      });
+    }
+  }, [cyclingData]);
+
+  const handleProfileSave = (field: string, value: string) => {
+    setLocalProfile(prev => ({ ...prev, [field]: value }));
+    updateProfile({ [field]: value });
+  };
+
+  const handleCyclingDataSave = (field: string, value: string | number) => {
+    const numericFields = ['weight_kg', 'height_cm'];
+    const finalValue = numericFields.includes(field) && typeof value === 'string' 
+      ? parseFloat(value) || null 
+      : value;
+    
+    setLocalCyclingData(prev => ({ ...prev, [field]: value.toString() }));
+    updateCyclingData({ [field]: finalValue });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-cycling flex items-center justify-center">
+        <div className="glass-morphism rounded-xl p-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cycling-primary mx-auto"></div>
+          <p className="text-white text-center mt-4">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
 
   const settingsSections = [
     {
@@ -40,43 +102,78 @@ const Settings = () => {
       title: 'Profile',
       icon: User,
       items: [
-        { label: 'Name', value: 'Cyclist Pro', type: 'text' },
-        { label: 'Email', value: 'cyclist@example.com', type: 'text' },
-        { label: 'Weight', value: '70 kg', type: 'text' },
-        { label: 'Height', value: '175 cm', type: 'text' }
+        { 
+          label: 'Full Name', 
+          value: localProfile.full_name, 
+          type: 'text',
+          onChange: (value: string) => handleProfileSave('full_name', value)
+        },
+        { 
+          label: 'Email', 
+          value: profile?.email || '', 
+          type: 'readonly'
+        },
+        { 
+          label: 'Phone', 
+          value: localProfile.phone, 
+          type: 'text',
+          onChange: (value: string) => handleProfileSave('phone', value)
+        },
+        { 
+          label: 'Country', 
+          value: localProfile.country, 
+          type: 'text',
+          onChange: (value: string) => handleProfileSave('country', value)
+        },
+        { 
+          label: 'City', 
+          value: localProfile.city, 
+          type: 'text',
+          onChange: (value: string) => handleProfileSave('city', value)
+        }
       ]
     },
     {
-      title: 'Notifications',
-      icon: Bell,
+      title: 'Cycling Data',
+      icon: Activity,
       items: [
-        { label: 'Ride Reminders', value: true, type: 'toggle' },
-        { label: 'Achievement Alerts', value: true, type: 'toggle' },
-        { label: 'Weather Updates', value: false, type: 'toggle' },
-        { label: 'Social Updates', value: true, type: 'toggle' }
-      ]
-    },
-    {
-      title: 'Privacy & Security',
-      icon: Shield,
-      items: [
-        { label: 'Location Sharing', value: false, type: 'toggle' },
-        { label: 'Activity Visibility', value: 'Friends Only', type: 'select', options: [
-          { value: 'public', label: 'Public' },
-          { value: 'friends', label: 'Friends Only' },
-          { value: 'private', label: 'Private' }
-        ]},
-        { label: 'Data Backup', value: true, type: 'toggle' }
-      ]
-    },
-    {
-      title: 'Data & Storage',
-      icon: Download,
-      items: [
-        { label: 'Auto-sync', value: true, type: 'toggle' },
-        { label: 'Offline Maps', value: '2.3 GB', type: 'info' },
-        { label: 'Export Data', value: 'GPX, KML, CSV', type: 'action' },
-        { label: 'Clear Cache', value: 'Free up space', type: 'action' }
+        { 
+          label: 'Weight (kg)', 
+          value: localCyclingData.weight_kg, 
+          type: 'number',
+          onChange: (value: string) => handleCyclingDataSave('weight_kg', value)
+        },
+        { 
+          label: 'Height (cm)', 
+          value: localCyclingData.height_cm, 
+          type: 'number',
+          onChange: (value: string) => handleCyclingDataSave('height_cm', value)
+        },
+        { 
+          label: 'Fitness Level', 
+          value: localCyclingData.fitness_level, 
+          type: 'select',
+          options: [
+            { value: 'beginner', label: 'Beginner' },
+            { value: 'intermediate', label: 'Intermediate' },
+            { value: 'advanced', label: 'Advanced' },
+            { value: 'professional', label: 'Professional' }
+          ],
+          onChange: (value: string) => handleCyclingDataSave('fitness_level', value)
+        },
+        { 
+          label: 'Preferred Type', 
+          value: localCyclingData.preferred_cycling_type, 
+          type: 'select',
+          options: [
+            { value: 'road', label: 'Road' },
+            { value: 'mountain', label: 'Mountain' },
+            { value: 'hybrid', label: 'Hybrid' },
+            { value: 'electric', label: 'Electric' },
+            { value: 'bmx', label: 'BMX' }
+          ],
+          onChange: (value: string) => handleCyclingDataSave('preferred_cycling_type', value)
+        }
       ]
     }
   ];
@@ -124,26 +221,9 @@ const Settings = () => {
                   >
                     <div>
                       <p className="font-medium text-white">{item.label}</p>
-                      {item.type === 'info' && (
-                        <p className="text-sm text-white/60">{item.value}</p>
-                      )}
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      {item.type === 'toggle' && (
-                        <motion.button
-                          className={`relative w-12 h-6 rounded-full transition-colors ${
-                            item.value ? 'bg-cycling-primary' : 'bg-white/20'
-                          }`}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <motion.div
-                            className="absolute top-1 w-4 h-4 bg-white rounded-full transition-transform"
-                            animate={{ x: item.value ? 24 : 2 }}
-                          />
-                        </motion.button>
-                      )}
-
                       {item.type === 'select' && item.options && (
                         <select
                           value={item.value}
@@ -161,22 +241,24 @@ const Settings = () => {
                       {item.type === 'text' && (
                         <input
                           type="text"
-                          defaultValue={item.value}
+                          value={item.value}
+                          onChange={(e) => item.onChange?.(e.target.value)}
+                          onBlur={(e) => item.onChange?.(e.target.value)}
                           className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cycling-primary w-32"
                         />
                       )}
 
-                      {item.type === 'action' && (
-                        <motion.button
-                          className="cycling-button px-4 py-2 text-sm"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          Action
-                        </motion.button>
+                      {item.type === 'number' && (
+                        <input
+                          type="number"
+                          value={item.value}
+                          onChange={(e) => item.onChange?.(e.target.value)}
+                          onBlur={(e) => item.onChange?.(e.target.value)}
+                          className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cycling-primary w-32"
+                        />
                       )}
 
-                      {item.type === 'info' && (
+                      {item.type === 'readonly' && (
                         <span className="text-white/60 text-sm">{item.value}</span>
                       )}
                     </div>
@@ -194,7 +276,7 @@ const Settings = () => {
           transition={{ delay: 0.8 }}
           className="glass-morphism rounded-xl p-6 mb-20 text-center"
         >
-          <h3 className="text-lg font-semibold text-white mb-2">CycleTrack Pro</h3>
+          <h3 className="text-lg font-semibold text-white mb-2">CycleTrack PRO</h3>
           <p className="text-white/60 text-sm mb-4">Version 1.0.0</p>
           <div className="flex justify-center space-x-4 text-sm text-white/60">
             <button className="hover:text-white transition-colors">Privacy Policy</button>
