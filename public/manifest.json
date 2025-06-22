@@ -1,0 +1,19 @@
+
+{
+  "name": "CycleTrack Pro - Offline Cycling Companion",
+  "short_name": "CycleTrack Pro",
+  "description": "Cutting-edge offline-first cycling app with 3D terrain, GPS tracking, and route planning",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0891b2",
+  "orientation": "portrait-primary",
+  "categories": ["sports", "health", "navigation"],
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
