@@ -7,8 +7,9 @@ import * as THREE from 'three';
 function MountainRidge() {
   const meshRef = useRef<THREE.Mesh>(null);
   
-  const vertices = useMemo(() => {
-    const verts = [];
+  const geometry = useMemo(() => {
+    const geo = new THREE.BufferGeometry();
+    const vertices = [];
     const size = 50;
     const segments = 64;
     
@@ -24,16 +25,11 @@ function MountainRidge() {
                       Math.cos(z * 0.1) * 2 +
                       Math.random() * 0.5;
         
-        verts.push(x, height, z);
+        vertices.push(x, height, z);
       }
     }
-    return new Float32Array(verts);
-  }, []);
 
-  const indices = useMemo(() => {
-    const idx = [];
-    const segments = 64;
-    
+    const indices = [];
     for (let i = 0; i < segments; i++) {
       for (let j = 0; j < segments; j++) {
         const a = i * (segments + 1) + j;
@@ -41,11 +37,16 @@ function MountainRidge() {
         const c = a + segments + 1;
         const d = c + 1;
         
-        idx.push(a, b, c);
-        idx.push(b, d, c);
+        indices.push(a, b, c);
+        indices.push(b, d, c);
       }
     }
-    return idx;
+    
+    geo.setIndex(indices);
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geo.computeVertexNormals();
+    
+    return geo;
   }, []);
 
   useFrame((state) => {
@@ -55,20 +56,7 @@ function MountainRidge() {
   });
 
   return (
-    <mesh ref={meshRef} position={[0, -15, 0]}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach='attributes-position'
-          count={vertices.length / 3}
-          array={vertices}
-          itemSize={3}
-        />
-        <bufferAttribute
-          attach='index'
-          array={new Uint16Array(indices)}
-          itemSize={1}
-        />
-      </bufferGeometry>
+    <mesh ref={meshRef} position={[0, -15, 0]} geometry={geometry}>
       <meshLambertMaterial 
         color="#0891b2" 
         wireframe={false}
