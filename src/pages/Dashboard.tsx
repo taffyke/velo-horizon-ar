@@ -2,6 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Navigation from '@/components/Navigation';
+import UserMenu from '@/components/UserMenu';
 import MetricCard from '@/components/MetricCard';
 import { 
   Activity, 
@@ -54,18 +55,21 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-cycling relative">
       <div className="container mx-auto px-4 py-6">
-        {/* Header */}
+        {/* Header with User Menu */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="flex items-center justify-between mb-8"
         >
-          <h1 className="text-3xl font-orbitron font-bold text-white mb-2">
-            Dashboard
-          </h1>
-          <p className="text-white/80">
-            Track your cycling progress and achievements
-          </p>
+          <div className="text-center flex-1">
+            <h1 className="text-3xl font-orbitron font-bold text-white mb-2">
+              Dashboard
+            </h1>
+            <p className="text-white/80">
+              Track your cycling progress and achievements
+            </p>
+          </div>
+          <UserMenu />
         </motion.div>
 
         {/* Metrics Grid */}
