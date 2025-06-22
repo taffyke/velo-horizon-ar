@@ -2,12 +2,16 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Navigation from '@/components/Navigation';
+import OfflineMap from '@/components/OfflineMap';
+import WeatherWidget from '@/components/WeatherWidget';
 import { 
   Search, 
   Plus, 
   MapPin, 
   Navigation as NavigationIcon,
-  Layers
+  Layers,
+  Route,
+  Bookmark
 } from 'lucide-react';
 
 const Map = () => {
@@ -22,10 +26,12 @@ const Map = () => {
   ];
 
   const savedRoutes = [
-    { name: 'Mountain Trail Loop', distance: '42.7 km', difficulty: 'Hard' },
-    { name: 'City Park Circuit', distance: '28.3 km', difficulty: 'Medium' },
-    { name: 'Riverside Path', distance: '35.6 km', difficulty: 'Easy' }
+    { name: 'Mountain Trail Loop', distance: '42.7 km', difficulty: 'Hard', markers: [{ lat: 0.1, lng: 0.1, title: 'Start' }] },
+    { name: 'City Park Circuit', distance: '28.3 km', difficulty: 'Medium', markers: [{ lat: -0.1, lng: 0.1, title: 'Park' }] },
+    { name: 'Riverside Path', distance: '35.6 km', difficulty: 'Easy', markers: [{ lat: 0.1, lng: -0.1, title: 'River' }] }
   ];
+
+  const [selectedRoute, setSelectedRoute] = useState(savedRoutes[0]);
 
   return (
     <div className="min-h-screen bg-gradient-day relative">
@@ -78,25 +84,22 @@ const Map = () => {
           </div>
         </motion.div>
 
-        {/* Map Area (Placeholder) */}
-        <div className="flex-1 relative mt-32">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-0 bg-gradient-to-br from-cycling-primary/20 to-cycling-secondary/20 rounded-t-3xl"
-          >
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center text-white">
-                <MapPin size={64} className="mx-auto mb-4 opacity-50" />
-                <p className="text-xl font-semibold mb-2">Interactive Map View</p>
-                <p className="text-white/70">3D terrain rendering will appear here</p>
-                <p className="text-sm text-white/60 mt-2">
-                  Selected Layer: {mapLayers.find(l => l.id === selectedLayer)?.name}
-                </p>
-              </div>
-            </div>
-          </motion.div>
+        {/* Map Area */}
+        <div className="flex-1 relative mt-40">
+          <OfflineMap 
+            className="absolute inset-0 rounded-t-3xl"
+            markers={selectedRoute.markers}
+          />
         </div>
+
+        {/* Weather Widget */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20 w-64"
+        >
+          <WeatherWidget />
+        </motion.div>
 
         {/* Route Controls */}
         <motion.div
@@ -109,6 +112,7 @@ const Map = () => {
               className="cycling-button p-3 w-full"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              title="Navigate"
             >
               <NavigationIcon size={20} />
             </motion.button>
@@ -116,6 +120,7 @@ const Map = () => {
               className="glass-morphism p-3 text-white hover:bg-white/20 rounded-lg transition-all"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              title="Change Layer"
             >
               <Layers size={20} />
             </motion.button>
@@ -123,8 +128,17 @@ const Map = () => {
               className="glass-morphism p-3 text-white hover:bg-white/20 rounded-lg transition-all"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              title="Create Route"
             >
-              <Plus size={20} />
+              <Route size={20} />
+            </motion.button>
+            <motion.button
+              className="glass-morphism p-3 text-white hover:bg-white/20 rounded-lg transition-all"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Save Location"
+            >
+              <Bookmark size={20} />
             </motion.button>
           </div>
         </motion.div>
@@ -141,7 +155,10 @@ const Map = () => {
               {savedRoutes.map((route, index) => (
                 <motion.div
                   key={route.name}
-                  className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                  onClick={() => setSelectedRoute(route)}
+                  className={`flex items-center justify-between p-3 rounded-lg hover:bg-white/10 transition-colors cursor-pointer ${
+                    selectedRoute.name === route.name ? 'bg-white/10' : 'bg-white/5'
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
