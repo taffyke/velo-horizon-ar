@@ -7,16 +7,20 @@ import WeatherWidget from '@/components/WeatherWidget';
 import { 
   Search, 
   Plus, 
-  MapPin, 
   Navigation as NavigationIcon,
   Layers,
   Route,
-  Bookmark
+  Bookmark,
+  MapPin
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Map = () => {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLayer, setSelectedLayer] = useState('terrain');
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [markers, setMarkers] = useState<Array<{ lat: number; lng: number; title: string }>>([]);
 
   const mapLayers = [
     { id: 'terrain', name: 'Terrain', description: '3D elevation view' },
@@ -25,13 +29,107 @@ const Map = () => {
     { id: 'traffic', name: 'Traffic', description: 'Real-time conditions' }
   ];
 
-  const savedRoutes = [
-    { name: 'Mountain Trail Loop', distance: '42.7 km', difficulty: 'Hard', markers: [{ lat: 0.1, lng: 0.1, title: 'Start' }] },
-    { name: 'City Park Circuit', distance: '28.3 km', difficulty: 'Medium', markers: [{ lat: -0.1, lng: 0.1, title: 'Park' }] },
-    { name: 'Riverside Path', distance: '35.6 km', difficulty: 'Easy', markers: [{ lat: 0.1, lng: -0.1, title: 'River' }] }
-  ];
+  const handleSearch = () => {
+    if (!searchQuery.trim()) {
+      toast({
+        title: "Search Error",
+        description: "Please enter a location to search",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    console.log('Searching for:', searchQuery);
+    toast({
+      title: "Searching...",
+      description: `Looking for "${searchQuery}"`,
+    });
+    
+    // Simulate search results
+    setTimeout(() => {
+      toast({
+        title: "Search Complete",
+        description: `Found results for "${searchQuery}"`,
+      });
+    }, 2000);
+  };
 
-  const [selectedRoute, setSelectedRoute] = useState(savedRoutes[0]);
+  const handleAddLocation = () => {
+    // Get current location and add as marker
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newMarker = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            title: `Saved Location ${markers.length + 1}`
+          };
+          setMarkers([...markers, newMarker]);
+          toast({
+            title: "Location Added",
+            description: "Current location saved as marker",
+          });
+        },
+        () => {
+          toast({
+            title: "Location Error",
+            description: "Could not get current location",
+            variant: "destructive",
+          });
+        }
+      );
+    }
+  };
+
+  const handleNavigation = () => {
+    setIsNavigating(!isNavigating);
+    toast({
+      title: isNavigating ? "Navigation Stopped" : "Navigation Started",
+      description: isNavigating ? "Turn-by-turn navigation disabled" : "Turn-by-turn navigation enabled",
+    });
+  };
+
+  const handleLayerChange = (layerId: string) => {
+    setSelectedLayer(layerId);
+    const layer = mapLayers.find(l => l.id === layerId);
+    toast({
+      title: "Layer Changed",
+      description: `Switched to ${layer?.name} view`,
+    });
+  };
+
+  const handleCreateRoute = () => {
+    toast({
+      title: "Route Planning",
+      description: "Click on the map to add waypoints for your route",
+    });
+  };
+
+  const handleBookmark = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const bookmark = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            title: `Bookmark ${Date.now()}`
+          };
+          setMarkers([...markers, bookmark]);
+          toast({
+            title: "Location Bookmarked",
+            description: "Current location saved to bookmarks",
+          });
+        },
+        () => {
+          toast({
+            title: "Bookmark Error",
+            description: "Could not bookmark current location",
+            variant: "destructive",
+          });
+        }
+      );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-day relative">
@@ -51,6 +149,7 @@ const Map = () => {
                   placeholder="Search locations or routes..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                   className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:border-cycling-primary"
                 />
               </div>
@@ -58,6 +157,8 @@ const Map = () => {
                 className="cycling-button p-3"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={handleAddLocation}
+                title="Add current location"
               >
                 <Plus size={20} />
               </motion.button>
@@ -68,7 +169,7 @@ const Map = () => {
               {mapLayers.map((layer) => (
                 <motion.button
                   key={layer.id}
-                  onClick={() => setSelectedLayer(layer.id)}
+                  onClick={() => handleLayerChange(layer.id)}
                   className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
                     selectedLayer === layer.id
                       ? 'bg-cycling-primary text-white'
@@ -88,7 +189,7 @@ const Map = () => {
         <div className="flex-1 relative mt-40">
           <OfflineMap 
             className="absolute inset-0 rounded-t-3xl"
-            markers={selectedRoute.markers}
+            markers={markers}
           />
         </div>
 
@@ -109,77 +210,66 @@ const Map = () => {
         >
           <div className="glass-morphism rounded-xl p-4 space-y-3">
             <motion.button
-              className="cycling-button p-3 w-full"
+              className={`p-3 w-full rounded-lg transition-all ${
+                isNavigating 
+                  ? 'bg-cycling-primary text-white' 
+                  : 'cycling-button'
+              }`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              title="Navigate"
+              onClick={handleNavigation}
+              title="Toggle Navigation"
             >
               <NavigationIcon size={20} />
             </motion.button>
             <motion.button
-              className="glass-morphism p-3 text-white hover:bg-white/20 rounded-lg transition-all"
+              className="glass-morphism p-3 text-white hover:bg-white/20 rounded-lg transition-all w-full"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => handleLayerChange(selectedLayer === 'cycling' ? 'terrain' : 'cycling')}
               title="Change Layer"
             >
               <Layers size={20} />
             </motion.button>
             <motion.button
-              className="glass-morphism p-3 text-white hover:bg-white/20 rounded-lg transition-all"
+              className="glass-morphism p-3 text-white hover:bg-white/20 rounded-lg transition-all w-full"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={handleCreateRoute}
               title="Create Route"
             >
               <Route size={20} />
             </motion.button>
             <motion.button
-              className="glass-morphism p-3 text-white hover:bg-white/20 rounded-lg transition-all"
+              className="glass-morphism p-3 text-white hover:bg-white/20 rounded-lg transition-all w-full"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              title="Save Location"
+              onClick={handleBookmark}
+              title="Bookmark Location"
             >
               <Bookmark size={20} />
             </motion.button>
           </div>
         </motion.div>
 
-        {/* Saved Routes Panel */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="absolute bottom-24 left-4 right-4 z-20"
-        >
-          <div className="glass-morphism rounded-xl p-4">
-            <h3 className="text-white font-semibold mb-3">Saved Routes</h3>
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              {savedRoutes.map((route, index) => (
-                <motion.div
-                  key={route.name}
-                  onClick={() => setSelectedRoute(route)}
-                  className={`flex items-center justify-between p-3 rounded-lg hover:bg-white/10 transition-colors cursor-pointer ${
-                    selectedRoute.name === route.name ? 'bg-white/10' : 'bg-white/5'
-                  }`}
-                  whileHover={{ scale: 1.02 }}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <div>
-                    <p className="text-white font-medium text-sm">{route.name}</p>
-                    <p className="text-white/60 text-xs">{route.distance}</p>
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    route.difficulty === 'Hard' ? 'bg-red-500/20 text-red-300' :
-                    route.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-300' :
-                    'bg-green-500/20 text-green-300'
-                  }`}>
-                    {route.difficulty}
-                  </span>
-                </motion.div>
-              ))}
+        {/* Navigation Status */}
+        {isNavigating && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="absolute bottom-24 left-4 right-4 z-20"
+          >
+            <div className="glass-morphism rounded-xl p-4">
+              <div className="flex items-center space-x-3">
+                <NavigationIcon className="text-cycling-primary animate-pulse" size={24} />
+                <div>
+                  <h3 className="text-white font-semibold">Navigation Active</h3>
+                  <p className="text-white/60 text-sm">Turn-by-turn directions enabled</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
 
         {/* Navigation */}
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4">

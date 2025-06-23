@@ -1,6 +1,17 @@
 
 import React, { useEffect, useRef, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { MapPin, Download, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+
+// Fix for default markers in react-leaflet
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 interface OfflineMapProps {
   center?: [number, number];
@@ -9,17 +20,27 @@ interface OfflineMapProps {
   markers?: Array<{ lat: number; lng: number; title?: string }>;
 }
 
+const MapUpdater: React.FC<{ center: [number, number]; zoom: number }> = ({ center, zoom }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    map.setView(center, zoom);
+  }, [map, center, zoom]);
+  
+  return null;
+};
+
 const OfflineMap: React.FC<OfflineMapProps> = ({ 
   center = [51.505, -0.09], 
   zoom = 13, 
   className = "",
   markers = []
 }) => {
-  const mapRef = useRef<HTMLDivElement>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [mapLoaded, setMapLoaded] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [currentCenter, setCurrentCenter] = useState<[number, number]>(center);
+  const [currentZoom, setCurrentZoom] = useState(zoom);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -43,16 +64,19 @@ const OfflineMap: React.FC<OfflineMapProps> = ({
   }, []);
 
   useEffect(() => {
-    if (!mapRef.current) return;
-
-    // Simulate map loading
-    const timer = setTimeout(() => {
-      setMapLoaded(true);
-      setLastRefresh(new Date());
-      console.log('Map: Initial load complete');
-    }, 1500);
-
-    return () => clearTimeout(timer);
+    // Get user's current location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newCenter: [number, number] = [position.coords.latitude, position.coords.longitude];
+          setCurrentCenter(newCenter);
+          console.log('Map: Location updated:', newCenter);
+        },
+        (error) => {
+          console.log('Map: Could not get location, using default');
+        }
+      );
+    }
   }, []);
 
   const refreshMapData = async () => {
@@ -61,7 +85,6 @@ const OfflineMap: React.FC<OfflineMapProps> = ({
     setIsRefreshing(true);
     console.log('Map: Refreshing map tiles and data');
     
-    // Simulate refreshing map tiles
     setTimeout(() => {
       setIsRefreshing(false);
       setLastRefresh(new Date());
@@ -76,7 +99,6 @@ const OfflineMap: React.FC<OfflineMapProps> = ({
     }
     
     console.log('Map: Downloading current area for offline use...');
-    // Simulate downloading map tiles for offline use
     setIsRefreshing(true);
     setTimeout(() => {
       setIsRefreshing(false);
@@ -98,95 +120,38 @@ const OfflineMap: React.FC<OfflineMapProps> = ({
 
   return (
     <div className={`relative ${className}`}>
-      <div ref={mapRef} className="w-full h-full bg-gradient-to-br from-green-100 to-blue-100 rounded-lg overflow-hidden">
-        {!mapLoaded ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cycling-primary mx-auto mb-4"></div>
-              <p className="text-gray-600">
-                {isOnline ? 'Loading map...' : 'Loading cached map...'}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="relative w-full h-full">
-            {/* Map background with refresh overlay */}
-            <div className={`absolute inset-0 bg-gradient-to-br from-green-200 via-blue-100 to-green-100 transition-opacity ${
-              isRefreshing ? 'opacity-50' : 'opacity-100'
-            }`}>
-              {/* Grid lines to simulate map tiles */}
-              <div className="absolute inset-0" style={{
-                backgroundImage: `
-                  linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
-                  linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)
-                `,
-                backgroundSize: isOnline ? '40px 40px' : '60px 60px' // Different grid for offline
-              }}></div>
-              
-              {/* Simulated roads with real-time updates */}
-              <div className={`absolute top-20 left-10 w-80 h-1 bg-gray-400 transform rotate-45 transition-all ${
-                isOnline ? 'opacity-100' : 'opacity-60'
-              }`}></div>
-              <div className={`absolute top-40 left-20 w-60 h-1 bg-gray-400 transform -rotate-12 transition-all ${
-                isOnline ? 'opacity-100' : 'opacity-60'
-              }`}></div>
-              <div className={`absolute bottom-20 right-10 w-40 h-1 bg-gray-400 transform rotate-12 transition-all ${
-                isOnline ? 'opacity-100' : 'opacity-60'
-              }`}></div>
-              
-              {/* Real-time traffic simulation (only when online) */}
-              {isOnline && (
-                <>
-                  <div className="absolute top-32 left-32 w-20 h-1 bg-red-400 transform rotate-45 animate-pulse"></div>
-                  <div className="absolute bottom-32 right-32 w-30 h-1 bg-yellow-400 transform -rotate-12 animate-pulse"></div>
-                </>
-              )}
-              
-              {/* Markers */}
-              {markers.map((marker, index) => (
-                <div
-                  key={index}
-                  className="absolute transform -translate-x-1/2 -translate-y-full"
-                  style={{
-                    left: `${50 + (marker.lng * 10)}%`,
-                    top: `${50 + (marker.lat * 10)}%`
-                  }}
-                >
-                  <MapPin className={`${isOnline ? 'text-red-500' : 'text-red-400'} transition-colors`} size={24} />
-                  {marker.title && (
-                    <div className="mt-1 px-2 py-1 bg-white rounded shadow text-xs">
-                      {marker.title}
-                    </div>
-                  )}
-                </div>
-              ))}
-              
-              {/* Current location marker with real-time updates */}
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                <div className={`w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg ${
-                  isOnline ? 'animate-pulse' : ''
-                }`}></div>
-                {isOnline && (
-                  <div className="absolute inset-0 w-4 h-4 bg-blue-400 rounded-full animate-ping opacity-75"></div>
-                )}
-              </div>
-              
-              {/* Refresh overlay when updating */}
-              {isRefreshing && (
-                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                  <div className="bg-white/90 rounded-lg p-4 flex items-center space-x-2">
-                    <RefreshCw className="animate-spin text-cycling-primary" size={20} />
-                    <span className="text-sm font-medium">Updating map...</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+      <MapContainer
+        center={currentCenter}
+        zoom={currentZoom}
+        className="w-full h-full rounded-lg"
+        zoomControl={false}
+      >
+        <MapUpdater center={currentCenter} zoom={currentZoom} />
+        
+        <TileLayer
+          url={isOnline 
+            ? "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          }
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          className={!isOnline ? 'opacity-80' : ''}
+        />
+        
+        {/* Current location marker */}
+        <Marker position={currentCenter}>
+          <Popup>Your current location</Popup>
+        </Marker>
+        
+        {/* Additional markers */}
+        {markers.map((marker, index) => (
+          <Marker key={index} position={[marker.lat, marker.lng]}>
+            <Popup>{marker.title || `Location ${index + 1}`}</Popup>
+          </Marker>
+        ))}
+      </MapContainer>
 
-      {/* Enhanced status indicators */}
-      <div className="absolute top-4 right-4 flex flex-col items-end space-y-2">
+      {/* Status indicators */}
+      <div className="absolute top-4 right-4 flex flex-col items-end space-y-2 z-[1000]">
         <div className={`flex items-center space-x-1 px-3 py-1 rounded-full text-xs backdrop-blur-sm ${
           isOnline ? 'bg-green-500/20 text-green-700' : 'bg-red-500/20 text-red-700'
         }`}>
@@ -217,9 +182,9 @@ const OfflineMap: React.FC<OfflineMapProps> = ({
         )}
       </div>
 
-      {/* Enhanced offline/update indicators */}
+      {/* Offline indicator */}
       {!isOnline && (
-        <div className="absolute bottom-4 left-4 right-4 bg-yellow-500/20 backdrop-blur-sm rounded-lg p-3">
+        <div className="absolute bottom-4 left-4 right-4 bg-yellow-500/20 backdrop-blur-sm rounded-lg p-3 z-[1000]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-yellow-700 text-sm font-medium">Offline Mode</p>
@@ -232,11 +197,13 @@ const OfflineMap: React.FC<OfflineMapProps> = ({
         </div>
       )}
 
-      {isOnline && lastRefresh && (
-        <div className="absolute bottom-4 left-4 bg-green-500/20 backdrop-blur-sm rounded-lg px-3 py-1">
-          <p className="text-green-700 text-xs">
-            Updated: {formatLastRefresh(lastRefresh)}
-          </p>
+      {/* Refresh overlay */}
+      {isRefreshing && (
+        <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-[1000]">
+          <div className="bg-white/90 rounded-lg p-4 flex items-center space-x-2">
+            <RefreshCw className="animate-spin text-cycling-primary" size={20} />
+            <span className="text-sm font-medium">Updating map...</span>
+          </div>
         </div>
       )}
     </div>
