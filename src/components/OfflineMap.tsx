@@ -122,8 +122,6 @@ const OfflineMap: React.FC<OfflineMapProps> = ({
     <div className={`relative ${className}`}>
       <div style={{ width: '100%', height: '100%' }}>
         <MapContainer
-          center={currentCenter}
-          zoom={currentZoom}
           style={{ width: '100%', height: '100%' }}
           zoomControl={false}
         >
@@ -131,7 +129,6 @@ const OfflineMap: React.FC<OfflineMapProps> = ({
           
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
           
           {/* Current location marker */}
