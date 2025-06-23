@@ -120,33 +120,32 @@ const OfflineMap: React.FC<OfflineMapProps> = ({
 
   return (
     <div className={`relative ${className}`}>
-      <MapContainer
-        center={currentCenter}
-        zoom={currentZoom}
-        style={{ width: '100%', height: '100%' }}
-        className="rounded-lg"
-        zoomControl={false}
-      >
-        <MapUpdater center={currentCenter} zoom={currentZoom} />
-        
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          className={!isOnline ? 'opacity-80' : ''}
-        />
-        
-        {/* Current location marker */}
-        <Marker position={currentCenter}>
-          <Popup>Your current location</Popup>
-        </Marker>
-        
-        {/* Additional markers */}
-        {markers.map((marker, index) => (
-          <Marker key={index} position={[marker.lat, marker.lng]}>
-            <Popup>{marker.title || `Location ${index + 1}`}</Popup>
+      <div style={{ width: '100%', height: '100%' }}>
+        <MapContainer
+          center={currentCenter}
+          zoom={currentZoom}
+          style={{ width: '100%', height: '100%' }}
+          zoomControl={false}
+        >
+          <MapUpdater center={currentCenter} zoom={currentZoom} />
+          
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          
+          {/* Current location marker */}
+          <Marker position={currentCenter}>
+            <Popup>Your current location</Popup>
           </Marker>
-        ))}
-      </MapContainer>
+          
+          {/* Additional markers */}
+          {markers.map((marker, index) => (
+            <Marker key={index} position={[marker.lat, marker.lng]}>
+              <Popup>{marker.title || `Location ${index + 1}`}</Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      </div>
 
       {/* Status indicators */}
       <div className="absolute top-4 right-4 flex flex-col items-end space-y-2 z-[1000]">
