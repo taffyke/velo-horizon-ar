@@ -10,8 +10,7 @@ import {
   Navigation as NavigationIcon,
   Layers,
   Route,
-  Bookmark,
-  MapPin
+  Bookmark
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,7 +19,6 @@ const Map = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLayer, setSelectedLayer] = useState('terrain');
   const [isNavigating, setIsNavigating] = useState(false);
-  const [markers, setMarkers] = useState<Array<{ lat: number; lng: number; title: string }>>([]);
 
   const mapLayers = [
     { id: 'terrain', name: 'Terrain', description: '3D elevation view' },
@@ -55,19 +53,13 @@ const Map = () => {
   };
 
   const handleAddLocation = () => {
-    // Get current location and add as marker
+    // Get current location and show marker
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const newMarker = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            title: `Saved Location ${markers.length + 1}`
-          };
-          setMarkers([...markers, newMarker]);
           toast({
-            title: "Location Added",
-            description: "Current location saved as marker",
+            title: "Location Found",
+            description: "Current location displayed on map",
           });
         },
         () => {
@@ -109,12 +101,6 @@ const Map = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const bookmark = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            title: `Bookmark ${Date.now()}`
-          };
-          setMarkers([...markers, bookmark]);
           toast({
             title: "Location Bookmarked",
             description: "Current location saved to bookmarks",
@@ -158,7 +144,7 @@ const Map = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleAddLocation}
-                title="Add current location"
+                title="Find current location"
               >
                 <Plus size={20} />
               </motion.button>
@@ -189,7 +175,6 @@ const Map = () => {
         <div className="flex-1 relative mt-40">
           <OfflineMap 
             className="absolute inset-0 rounded-t-3xl"
-            markers={markers}
           />
         </div>
 

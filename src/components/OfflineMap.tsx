@@ -123,16 +123,14 @@ const OfflineMap: React.FC<OfflineMapProps> = ({
       <MapContainer
         center={currentCenter}
         zoom={currentZoom}
-        className="w-full h-full rounded-lg"
+        style={{ width: '100%', height: '100%' }}
+        className="rounded-lg"
         zoomControl={false}
       >
         <MapUpdater center={currentCenter} zoom={currentZoom} />
         
         <TileLayer
-          url={isOnline 
-            ? "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          }
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           className={!isOnline ? 'opacity-80' : ''}
         />
