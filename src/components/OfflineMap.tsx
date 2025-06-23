@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Download, Wifi, WifiOff, RefreshCw } from 'lucide-react';
@@ -20,18 +20,6 @@ interface OfflineMapProps {
   markers?: Array<{ lat: number; lng: number; title?: string }>;
 }
 
-const MapUpdater: React.FC<{ center: [number, number]; zoom: number }> = ({ center, zoom }) => {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (map) {
-      map.setView(center, zoom);
-    }
-  }, [map, center, zoom]);
-  
-  return null;
-};
-
 const OfflineMap: React.FC<OfflineMapProps> = ({ 
   center = [51.505, -0.09], 
   zoom = 13, 
@@ -42,7 +30,6 @@ const OfflineMap: React.FC<OfflineMapProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [currentCenter, setCurrentCenter] = useState<[number, number]>(center);
-  const [currentZoom, setCurrentZoom] = useState(zoom);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -123,10 +110,10 @@ const OfflineMap: React.FC<OfflineMapProps> = ({
     <div className={`relative ${className}`}>
       <div style={{ width: '100%', height: '100%' }}>
         <MapContainer
+          center={currentCenter as any}
+          zoom={zoom}
           style={{ width: '100%', height: '100%' }}
         >
-          <MapUpdater center={currentCenter} zoom={currentZoom} />
-          
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
