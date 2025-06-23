@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -122,15 +123,12 @@ const OfflineMap: React.FC<OfflineMapProps> = ({
     <div className={`relative ${className}`}>
       <div style={{ width: '100%', height: '100%' }}>
         <MapContainer
-          center={currentCenter}
-          zoom={currentZoom}
           style={{ width: '100%', height: '100%' }}
         >
           <MapUpdater center={currentCenter} zoom={currentZoom} />
           
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
           
           {/* Current location marker */}
