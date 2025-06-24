@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -110,7 +110,7 @@ const OfflineMap: React.FC<OfflineMapProps> = ({
     <div className={`relative ${className}`}>
       <div style={{ width: '100%', height: '100%' }}>
         <MapContainer
-          center={currentCenter as any}
+          center={currentCenter}
           zoom={zoom}
           style={{ width: '100%', height: '100%' }}
         >

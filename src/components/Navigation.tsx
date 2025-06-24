@@ -27,7 +27,7 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
   ];
 
   return (
-    <nav className={`glass-morphism rounded-xl p-2 ${className}`}>
+    <nav className={`glass-morphism rounded-xl p-1 sm:p-2 ${className}`}>
       <div className="flex space-x-1">
         {navigationItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -49,9 +49,9 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 />
               )}
-              <div className="relative z-10 flex flex-col items-center py-2 px-3">
-                <Icon size={20} className={isActive ? 'text-cycling-primary' : 'text-current'} />
-                <span className={`text-xs mt-1 ${isActive ? 'text-cycling-primary' : 'text-current'}`}>
+              <div className="relative z-10 flex flex-col items-center py-1 px-1 sm:py-2 sm:px-3">
+                <Icon size={16} className={`sm:size-5 ${isActive ? 'text-cycling-primary' : 'text-current'}`} />
+                <span className={`text-xs mt-0.5 sm:mt-1 ${isActive ? 'text-cycling-primary' : 'text-current'} hidden xs:block`}>
                   {item.label}
                 </span>
               </div>

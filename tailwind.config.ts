@@ -19,6 +19,9 @@ export default {
 			}
 		},
 		extend: {
+			screens: {
+				'xs': '475px',
+			},
 			fontFamily: {
 				'inter': ['Inter', 'sans-serif'],
 				'orbitron': ['Orbitron', 'monospace'],
