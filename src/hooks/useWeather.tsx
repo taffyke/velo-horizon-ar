@@ -27,6 +27,44 @@ export const useWeather = () => {
   const [location, setLocation] = useState<WeatherLocation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
+
+  // Monitor online/offline status
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      console.log('Connection restored - refreshing weather data');
+      if (location) {
+        fetchWeather(location);
+      }
+    };
+    
+    const handleOffline = () => {
+      setIsOnline(false);
+      console.log('Connection lost - using cached weather data');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [location]);
+
+  // Auto-refresh weather data every 10 minutes when online
+  useEffect(() => {
+    if (!isOnline || !location) return;
+
+    const interval = setInterval(() => {
+      console.log('Auto-refreshing weather data');
+      fetchWeather(location);
+    }, 10 * 60 * 1000); // 10 minutes
+
+    return () => clearInterval(interval);
+  }, [isOnline, location]);
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -37,11 +75,13 @@ export const useWeather = () => {
     setLoading(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLocation({
+        const newLocation = {
           lat: position.coords.latitude,
           lon: position.coords.longitude,
-        });
+        };
+        setLocation(newLocation);
         setError(null);
+        console.log('Location updated:', newLocation);
       },
       (error) => {
         setError('Unable to retrieve location');
@@ -51,6 +91,11 @@ export const useWeather = () => {
           description: "Unable to get your location for weather data",
           variant: "destructive",
         });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 5 * 60 * 1000 // 5 minutes
       }
     );
   };
@@ -58,41 +103,87 @@ export const useWeather = () => {
   const fetchWeather = async (weatherLocation: WeatherLocation) => {
     try {
       setLoading(true);
+      console.log('Fetching weather for:', weatherLocation);
       
-      // Note: In a real app, you'd store the API key in Supabase secrets
-      // For demo purposes, we'll simulate weather data
+      // Check if we have cached data less than 30 minutes old
+      const cachedWeather = localStorage.getItem('cached-weather');
+      const cachedTime = localStorage.getItem('cached-weather-time');
+      
+      if (!isOnline && cachedWeather && cachedTime) {
+        const cacheAge = Date.now() - parseInt(cachedTime);
+        if (cacheAge < 30 * 60 * 1000) { // 30 minutes
+          setWeather(JSON.parse(cachedWeather));
+          setLastUpdateTime(new Date(parseInt(cachedTime)));
+          setLoading(false);
+          console.log('Using cached weather data (offline)');
+          return;
+        }
+      }
+
+      // Simulate real weather API with more realistic data
       const simulatedWeather: WeatherData = {
         temperature: Math.round(15 + Math.random() * 20),
         humidity: Math.round(40 + Math.random() * 40),
         windSpeed: Math.round(Math.random() * 20),
         windDirection: Math.round(Math.random() * 360),
-        description: ['Clear sky', 'Partly cloudy', 'Light rain', 'Sunny'][Math.floor(Math.random() * 4)],
-        icon: ['01d', '02d', '10d', '01d'][Math.floor(Math.random() * 4)],
+        description: ['Clear sky', 'Partly cloudy', 'Light rain', 'Sunny', 'Overcast', 'Windy'][Math.floor(Math.random() * 6)],
+        icon: ['01d', '02d', '10d', '01d', '03d', '50d'][Math.floor(Math.random() * 6)],
         pressure: Math.round(1000 + Math.random() * 50),
         visibility: Math.round(5 + Math.random() * 15),
         uvIndex: Math.round(Math.random() * 11),
         feelsLike: Math.round(15 + Math.random() * 20),
       };
 
-      // Simulate API delay
+      // Simulate network delay based on connection
+      const delay = isOnline ? 500 + Math.random() * 1000 : 2000;
+      
       setTimeout(() => {
         setWeather(simulatedWeather);
+        setLastUpdateTime(new Date());
         setLoading(false);
         setError(null);
-      }, 1000);
+        
+        // Cache the weather data
+        localStorage.setItem('cached-weather', JSON.stringify(simulatedWeather));
+        localStorage.setItem('cached-weather-time', Date.now().toString());
+        
+        console.log('Weather data updated:', simulatedWeather);
+        
+        if (isOnline) {
+          toast({
+            title: "Weather Updated",
+            description: "Latest weather data loaded",
+            duration: 2000,
+          });
+        }
+      }, delay);
 
     } catch (err) {
       setError('Failed to fetch weather data');
       setLoading(false);
-      toast({
-        title: "Weather Error",
-        description: "Unable to fetch weather data",
-        variant: "destructive",
-      });
+      console.error('Weather fetch error:', err);
+      
+      // Try to use cached data as fallback
+      const cachedWeather = localStorage.getItem('cached-weather');
+      if (cachedWeather) {
+        setWeather(JSON.parse(cachedWeather));
+        toast({
+          title: "Using Cached Weather",
+          description: "Showing last known weather data",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Weather Error",
+          description: "Unable to fetch weather data",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const refreshWeather = () => {
+    console.log('Manual weather refresh requested');
     if (location) {
       fetchWeather(location);
     } else {
@@ -115,6 +206,8 @@ export const useWeather = () => {
     location,
     loading,
     error,
+    isOnline,
+    lastUpdateTime,
     refreshWeather,
     getCurrentLocation,
   };
