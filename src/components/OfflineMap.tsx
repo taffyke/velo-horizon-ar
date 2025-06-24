@@ -110,14 +110,14 @@ const OfflineMap: React.FC<OfflineMapProps> = ({
     <div className={`relative ${className}`}>
       <div style={{ width: '100%', height: '100%' }}>
         <MapContainer
-          center={currentCenter}
-          zoom={zoom}
+          {...{ center: currentCenter } as any}
+          {...{ zoom } as any}
           style={{ width: '100%', height: '100%' }}
-          scrollWheelZoom={false}
+          {...{ scrollWheelZoom: false } as any}
         >
           <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            {...{ url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" } as any}
+            {...{ attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' } as any}
           />
           
           {/* Current location marker */}
