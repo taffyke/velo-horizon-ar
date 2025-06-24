@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +15,8 @@ import LiveTracking from "./pages/LiveTracking";
 import History from "./pages/History";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import Profile from '@/pages/Profile';
+import Achievements from '@/pages/Achievements';
 
 const queryClient = new QueryClient();
 
@@ -134,6 +135,45 @@ const App = () => (
                       transition={pageTransition}
                     >
                       <Settings />
+                    </motion.div>
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <motion.div
+                      initial="initial"
+                      animate="in"
+                      exit="out"
+                      variants={pageVariants}
+                      transition={pageTransition}
+                    >
+                      <Profile />
+                    </motion.div>
+                  </ProtectedRoute>
+                } />
+                <Route path="/live" element={
+                  <ProtectedRoute>
+                    <motion.div
+                      initial="initial"
+                      animate="in"
+                      exit="out"
+                      variants={pageVariants}
+                      transition={pageTransition}
+                    >
+                      <LiveTracking />
+                    </motion.div>
+                  </ProtectedRoute>
+                } />
+                <Route path="/achievements" element={
+                  <ProtectedRoute>
+                    <motion.div
+                      initial="initial"
+                      animate="in"
+                      exit="out"
+                      variants={pageVariants}
+                      transition={pageTransition}
+                    >
+                      <Achievements />
                     </motion.div>
                   </ProtectedRoute>
                 } />

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { LucideIcon } from 'lucide-react';
@@ -10,7 +9,8 @@ interface MetricCardProps {
   icon: LucideIcon;
   change?: {
     value: number;
-    type: 'increase' | 'decrease';
+    type: 'increase' | 'decrease' | 'neutral';
+    label?: string;
   };
   className?: string;
 }
@@ -37,9 +37,14 @@ const MetricCard: React.FC<MetricCardProps> = ({
         </div>
         {change && (
           <div className={`text-sm font-medium ${
-            change.type === 'increase' ? 'text-green-500' : 'text-red-500'
+            change.type === 'increase' ? 'text-green-500' : 
+            change.type === 'decrease' ? 'text-red-500' : 
+            'text-blue-400'
           }`}>
-            {change.type === 'increase' ? '+' : '-'}{Math.abs(change.value)}%
+            {change.type === 'increase' ? '+' : 
+             change.type === 'decrease' ? '-' : 
+             ''}{Math.abs(change.value)}%
+            {change.label && <span className="ml-1 text-xs opacity-70">{change.label}</span>}
           </div>
         )}
       </div>

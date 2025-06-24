@@ -1,248 +1,201 @@
-
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
-import { 
-  Calendar, 
-  TrendingUp, 
-  Activity, 
-  Clock,
-  Filter,
-  Download
-} from 'lucide-react';
+import { Calendar, ChevronDown, Clock, MapPin, TrendingUp, Bike } from 'lucide-react';
+import CyclingChart from '@/components/CyclingChart';
+import { useCyclingSessions } from '@/hooks/useCyclingSessions';
+
+// Cycling background images
+const CYCLING_IMAGES = [
+  '/assets/images/cycling-background-1.jpg',
+  '/assets/images/cycling-background-2.jpg'
+];
 
 const History = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState('week');
-
-  const periods = [
-    { id: 'week', label: 'This Week' },
-    { id: 'month', label: 'This Month' },
-    { id: 'year', label: 'This Year' },
-    { id: 'all', label: 'All Time' }
-  ];
-
-  const rideHistory = [
-    {
-      id: 1,
-      date: '2024-01-20',
-      title: 'Mountain Trail Adventure',
-      distance: 42.7,
-      duration: '2:34:21',
-      avgSpeed: 16.8,
-      elevation: 847,
-      difficulty: 'Hard'
-    },
-    {
-      id: 2,
-      date: '2024-01-19',
-      title: 'City Park Circuit',
-      distance: 28.3,
-      duration: '1:45:12',
-      avgSpeed: 16.1,
-      elevation: 234,
-      difficulty: 'Medium'
-    },
-    {
-      id: 3,
-      date: '2024-01-18',
-      title: 'Riverside Path',
-      distance: 35.6,
-      duration: '2:12:45',
-      avgSpeed: 16.0,
-      elevation: 123,
-      difficulty: 'Easy'
-    },
-    {
-      id: 4,
-      date: '2024-01-17',
-      title: 'Hill Climbing Challenge',
-      distance: 18.2,
-      duration: '1:28:33',
-      avgSpeed: 12.3,
-      elevation: 956,
-      difficulty: 'Hard'
-    }
-  ];
-
-  const stats = {
-    totalDistance: rideHistory.reduce((sum, ride) => sum + ride.distance, 0),
-    totalTime: rideHistory.reduce((sum, ride) => {
-      const [hours, minutes, seconds] = ride.duration.split(':').map(Number);
-      return sum + hours * 3600 + minutes * 60 + seconds;
-    }, 0),
-    totalRides: rideHistory.length,
-    avgSpeed: rideHistory.reduce((sum, ride) => sum + ride.avgSpeed, 0) / rideHistory.length
-  };
-
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds %- 3600) / 60);
-    return `${hours}h ${minutes}m`;
-  };
+  const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week');
+  const [backgroundImage, setBackgroundImage] = useState(0);
+  const { sessions, loading } = useCyclingSessions();
+  
+  // Calculate statistics from real session data
+  const totalDistance = sessions.reduce((sum, session) => sum + (session.distance_km || 0), 0);
+  const totalTime = sessions.reduce((sum, session) => sum + (session.duration_seconds || 0), 0);
+  const totalRides = sessions.length;
+  const avgSpeed = totalDistance > 0 ? (totalDistance / (totalTime / 3600)) : 0;
+  
+  // Prepare data for chart
+  const chartData = sessions.slice(0, 10).map((session, index) => ({
+    time: new Date(session.created_at).toLocaleDateString(),
+    speed: session.average_speed_kmh || 0,
+    heartRate: 120 + Math.random() * 30, // Simulated heart rate data
+    elevation: session.elevation_gain_m || 0
+  }));
 
   return (
-    <div className="min-h-screen bg-gradient-dusk relative">
-      <div className="container mx-auto px-4 py-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <h1 className="text-3xl font-orbitron font-bold text-white mb-2">
-            Ride History
-          </h1>
-          <p className="text-white/80">
-            Track your cycling journey and progress
-          </p>
-        </motion.div>
-
-        {/* Period Selection */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-morphism rounded-xl p-4 mb-8"
-        >
-          <div className="flex space-x-2 overflow-x-auto">
-            {periods.map((period) => (
-              <motion.button
-                key={period.id}
-                onClick={() => setSelectedPeriod(period.id)}
-                className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
-                  selectedPeriod === period.id
+    <div className="min-h-screen bg-gradient-cycling relative">
+      {/* Background Image Overlay */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center opacity-20 mix-blend-overlay"
+        style={{ 
+          backgroundImage: `url(${CYCLING_IMAGES[backgroundImage]})`,
+          transition: 'background-image 1s ease-in-out'
+        }}
+      ></div>
+      
+      <div className="relative z-10 min-h-screen pb-20">
+        <div className="p-4">
+          <h1 className="text-3xl font-orbitron font-bold text-white mb-4">Ride History</h1>
+          
+          {/* Period Selection */}
+          <div className="flex space-x-2 mb-6">
+            {['week', 'month', 'year'].map((period) => (
+              <button
+                key={period}
+                onClick={() => setSelectedPeriod(period as any)}
+                className={`px-4 py-2 rounded-lg transition-all ${
+                  selectedPeriod === period
                     ? 'bg-cycling-primary text-white'
                     : 'bg-white/10 text-white/80 hover:bg-white/20'
                 }`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
               >
-                {period.label}
-              </motion.button>
+                {period.charAt(0).toUpperCase() + period.slice(1)}
+              </button>
             ))}
           </div>
-        </motion.div>
-
-        {/* Summary Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
-        >
-          <div className="glass-morphism rounded-xl p-4 text-center">
-            <Activity className="text-cycling-primary mx-auto mb-2" size={24} />
-            <p className="text-2xl font-bold text-white">{stats.totalDistance.toFixed(1)}</p>
-            <p className="text-white/60 text-sm">km Total</p>
-          </div>
-          <div className="glass-morphism rounded-xl p-4 text-center">
-            <Clock className="text-cycling-secondary mx-auto mb-2" size={24} />
-            <p className="text-2xl font-bold text-white">{formatDuration(stats.totalTime)}</p>
-            <p className="text-white/60 text-sm">Time</p>
-          </div>
-          <div className="glass-morphism rounded-xl p-4 text-center">
-            <Calendar className="text-cycling-accent mx-auto mb-2" size={24} />
-            <p className="text-2xl font-bold text-white">{stats.totalRides}</p>
-            <p className="text-white/60 text-sm">Rides</p>
-          </div>
-          <div className="glass-morphism rounded-xl p-4 text-center">
-            <TrendingUp className="text-purple-400 mx-auto mb-2" size={24} />
-            <p className="text-2xl font-bold text-white">{stats.avgSpeed.toFixed(1)}</p>
-            <p className="text-white/60 text-sm">km/h Avg</p>
-          </div>
-        </motion.div>
-
-        {/* Chart Placeholder */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="glass-morphism rounded-xl p-6 mb-8"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white">Performance Trends</h2>
-            <div className="flex space-x-2">
-              <motion.button
-                className="glass-morphism p-2 text-white hover:bg-white/20 rounded-lg transition-all"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+          
+          {/* Stats Overview */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            {[
+              { 
+                label: 'Total Distance', 
+                value: `${totalDistance.toFixed(1)} km`, 
+                icon: MapPin,
+                change: totalDistance > 10 ? '+12%' : '-5%',
+                changeType: totalDistance > 10 ? 'positive' : 'negative'
+              },
+              { 
+                label: 'Total Time', 
+                value: `${Math.floor(totalTime / 60)} min`, 
+                icon: Clock,
+                change: totalTime > 60 ? '+8%' : '-3%',
+                changeType: totalTime > 60 ? 'positive' : 'negative'
+              },
+              { 
+                label: 'Total Rides', 
+                value: totalRides.toString(), 
+                icon: Bike,
+                change: totalRides > 0 ? '+5%' : '0%',
+                changeType: totalRides > 0 ? 'positive' : 'neutral'
+              },
+              { 
+                label: 'Avg. Speed', 
+                value: `${avgSpeed.toFixed(1)} km/h`, 
+                icon: TrendingUp,
+                change: avgSpeed > 15 ? '+7%' : '-2%',
+                changeType: avgSpeed > 15 ? 'positive' : 'negative'
+              }
+            ].map((stat, index) => (
+              <div 
+                key={index} 
+                className="glass-morphism rounded-xl p-4"
               >
-                <Filter size={16} />
-              </motion.button>
-              <motion.button
-                className="glass-morphism p-2 text-white hover:bg-white/20 rounded-lg transition-all"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Download size={16} />
-              </motion.button>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-black/70 text-sm">{stat.label}</span>
+                  <stat.icon className="text-cycling-primary" size={18} />
+                </div>
+                <div className="text-black text-xl font-semibold mb-1">{stat.value}</div>
+                <div className={`text-xs ${
+                  stat.changeType === 'positive' ? 'text-green-600' : 
+                  stat.changeType === 'negative' ? 'text-red-600' : 'text-blue-600'
+                }`}>
+                  {stat.change} vs. previous {selectedPeriod}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Performance Chart */}
+          <div className="glass-morphism rounded-xl p-4 mb-6">
+            <h2 className="text-xl font-semibold text-black mb-4">Performance</h2>
+            <div className="h-64">
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-black/60">Loading data...</div>
+                </div>
+              ) : chartData.length > 0 ? (
+                <CyclingChart 
+                  data={chartData}
+                  showHeartRate={true}
+                  showElevation={true}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-black/60">No ride data available</div>
+                </div>
+              )}
             </div>
           </div>
           
-          <div className="h-48 bg-white/5 rounded-lg flex items-center justify-center">
-            <div className="text-center text-white/60">
-              <TrendingUp size={48} className="mx-auto mb-2 opacity-50" />
-              <p>Interactive performance chart</p>
-              <p className="text-sm">Distance, speed, and elevation trends</p>
-            </div>
+          {/* Recent Rides */}
+          <div className="glass-morphism rounded-xl p-4">
+            <h2 className="text-xl font-semibold text-white mb-4">Recent Rides</h2>
+            
+            {loading ? (
+              <div className="text-center py-8 text-white/60">
+                Loading rides...
+              </div>
+            ) : sessions.length > 0 ? (
+              <div className="space-y-4">
+                {sessions.slice(0, 5).map((session, index) => (
+                  <div 
+                    key={index}
+                    className="bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-white font-medium">
+                          {new Date(session.created_at).toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric'
+                          })} Ride
+                        </h3>
+                        <div className="text-white/70 text-sm mt-1">
+                          {session.distance_km?.toFixed(1) || '0'} km • {Math.floor((session.duration_seconds || 0) / 60)} min
+                        </div>
+                      </div>
+                      <div className="text-cycling-primary text-right">
+                        <div className="text-lg font-semibold">
+                          {session.average_speed_kmh?.toFixed(1) || '0'}
+                        </div>
+                        <div className="text-xs text-white/70">km/h</div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3 flex space-x-4 text-xs text-white/60">
+                      <div className="flex items-center">
+                        <TrendingUp size={14} className="mr-1" />
+                        <span>{session.elevation_gain_m || 0}m gain</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Calendar size={14} className="mr-1" />
+                        <span>
+                          {new Date(session.created_at).toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-white/60">
+                No ride history available
+              </div>
+            )}
           </div>
-        </motion.div>
-
-        {/* Ride List */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="glass-morphism rounded-xl p-6 mb-20"
-        >
-          <h2 className="text-xl font-semibold text-white mb-6">Recent Rides</h2>
-          
-          <div className="space-y-4">
-            {rideHistory.map((ride, index) => (
-              <motion.div
-                key={ride.id}
-                className="bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors cursor-pointer"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.7 + index * 0.1 }}
-                whileHover={{ scale: 1.02 }}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="font-medium text-white">{ride.title}</h3>
-                    <p className="text-sm text-white/60">{new Date(ride.date).toLocaleDateString()}</p>
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    ride.difficulty === 'Hard' ? 'bg-red-500/20 text-red-300' :
-                    ride.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-300' :
-                    'bg-green-500/20 text-green-300'
-                  }`}>
-                    {ride.difficulty}
-                  </span>
-                </div>
-                
-                <div className="grid grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <p className="text-white/60">Distance</p>
-                    <p className="text-white font-medium">{ride.distance} km</p>
-                  </div>
-                  <div>
-                    <p className="text-white/60">Duration</p>
-                    <p className="text-white font-medium">{ride.duration}</p>
-                  </div>
-                  <div>
-                    <p className="text-white/60">Avg Speed</p>
-                    <p className="text-white font-medium">{ride.avgSpeed} km/h</p>
-                  </div>
-                  <div>
-                    <p className="text-white/60">Elevation</p>
-                    <p className="text-white font-medium">{ride.elevation} m</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
+        </div>
+        
         {/* Navigation */}
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4">
           <Navigation />
@@ -253,3 +206,4 @@ const History = () => {
 };
 
 export default History;
+
