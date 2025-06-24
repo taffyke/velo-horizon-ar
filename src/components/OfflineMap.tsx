@@ -113,9 +113,11 @@ const OfflineMap: React.FC<OfflineMapProps> = ({
           center={currentCenter}
           zoom={zoom}
           style={{ width: '100%', height: '100%' }}
+          scrollWheelZoom={false}
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
           
           {/* Current location marker */}
